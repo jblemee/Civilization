@@ -19,6 +19,9 @@ group = mod_group_id
 repositories {
     mavenLocal()
     maven { url = 'https://maven.impactdev.net/repository/development' }
+    flatDir {
+        dir 'libs'
+    }
 }
 
 base {
@@ -98,6 +101,8 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
     implementation "ca.landonjw.gooeylibs:api:3.1.1-1.21.x"
+    implementation "com.gmail.picono435:randomtp:9.1.0+1.21.4-neoforge"
+    implementation "me.isaiah:Multiworld-NeoForged:1.21.2"
 
     runtimeOnly "ca.landonjw.gooeylibs:neoforge:3.1.1-1.21.x"
 

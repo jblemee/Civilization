@@ -24,3 +24,34 @@ Additional Resources:
 ==========
 Community Documentation: https://docs.neoforged.net/  
 NeoForged Discord: https://discord.neoforged.net/
+
+Configuration
+=============
+
+On the machine console, execute : `docker exec -i docker-minecraft-server-civilization-1  rcon-cli` to run MC Console.
+
+## Luckperms
+
+- Enable luckperms for the Operator and remove randomtp commands for all users:
+
+```bash
+luckperms user Plus200 permission set luckperms.* true
+lp group default permission set randomtp.commands.* false
+```
+
+## RandomTP
+
+- Disable direct access to TP. See [Luckperms](#luckperms)
+- Enable random tp on first logging on `config/RandomTP/config.yaml`
+- Set cooldowb between 2 TP
+
+```yaml 
+auto-teleportation: true
+cooldown: 300
+```
+
+## Perma Death
+
+Configure death duration on `config\permadeath-server.toml`
+
+

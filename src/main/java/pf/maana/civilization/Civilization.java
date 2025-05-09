@@ -6,17 +6,23 @@ import ca.landonjw.gooeylibs2.api.page.GooeyPage;
 import ca.landonjw.gooeylibs2.api.page.Page;
 import ca.landonjw.gooeylibs2.api.template.Template;
 import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
+import com.gmail.picono435.randomtp.commands.RTPDCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -30,6 +36,11 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
+
+import java.util.Optional;
+import java.util.Set;
+
+import static me.isaiah.multiworld.command.SpawnCommand.getSpawn;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(Civilization.MODID)
@@ -63,6 +74,7 @@ public class Civilization {
     public void onCommandRegistration(RegisterCommandsEvent event) {
         LOGGER.info("Registering commands");
 
+        // TODO: looks like neoforge provide menu feature. See Player.openMenu / MenuHandler
         GooeyButton mainWorldButton = GooeyButton.builder()
                 .display(new ItemStack(Items.GRASS_BLOCK))
                 .with(DataComponents.CUSTOM_NAME, Component.literal("Main World").withColor(0x32a852))
@@ -70,7 +82,8 @@ public class Civilization {
                     ServerPlayer player = buttonAction.getPlayer();
                     MinecraftServer server = player.getServer();
                     if(server == null) return;
-                    server.getCommands().performPrefixedCommand(player.createCommandSourceStack(), "/mw tp minecraft:overworld");
+                    BlockPos pos = Optional.ofNullable(player.getRespawnPosition()).orElse(getSpawn(server.overworld()));
+                    player.teleportTo(server.overworld(), pos.getX(), pos.getY(), pos.getZ(), Set.of(), 0f, 0f, true);
                 })
                 .build();
 
@@ -81,7 +94,9 @@ public class Civilization {
                     ServerPlayer player = buttonAction.getPlayer();
                     MinecraftServer server = player.getServer();
                     if(server == null) return;
-                    server.getCommands().performPrefixedCommand(player.createCommandSourceStack(), "/mw tp "+Config.normalResourceWorldId);
+                    ResourceLocation resourceLocation = ResourceLocation.read(Config.normalResourceWorldId).getOrThrow();
+                    ResourceKey<Level> resourceKey = ResourceKey.create(Registries.DIMENSION, resourceLocation);
+                    RTPDCommand.runCommand(player, server.getLevel(resourceKey));
                 })
                 .build();
 
