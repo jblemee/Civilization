@@ -9,10 +9,11 @@ import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.gmail.picono435.randomtp.commands.RTPDCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -23,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -32,21 +34,38 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.slf4j.Logger;
 
-import java.util.Optional;
 import java.util.Set;
-
-import static me.isaiah.multiworld.command.SpawnCommand.getSpawn;
+import java.util.function.Supplier;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
-@Mod(Civilization.MODID)
+@Mod(Civilization.MOD_ID)
 public class Civilization {
-    public static final String MODID = "civilization";
+    public static final String MOD_ID = "civilization";
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    public static final Codec<Vec3> VEC_3_CODEC = RecordCodecBuilder.create(instance -> // Given an instance
+            instance.group( // Define the fields within the instance
+                    Codec.DOUBLE.fieldOf("x").forGetter(Vec3::x),
+                    Codec.DOUBLE.fieldOf("y").forGetter(Vec3::y),
+                    Codec.DOUBLE.fieldOf("z").forGetter(Vec3::z)
+            ).apply(instance, Vec3::new) // Define how to create the object
+    );
+
+    // Create the DeferredRegister for attachment types
+    private static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MOD_ID);
+
+    // Serialization via codec
+    private static final Supplier<AttachmentType<Vec3>> TP_BACK_POSITION = ATTACHMENT_TYPES.register(
+            "tp_back_pos", () -> AttachmentType.builder(()->new Vec3(0,65,0)).serialize(VEC_3_CODEC).build()
+    );
 
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
@@ -61,6 +80,8 @@ public class Civilization {
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
+        ATTACHMENT_TYPES.register(modEventBus);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -82,8 +103,9 @@ public class Civilization {
                     ServerPlayer player = buttonAction.getPlayer();
                     MinecraftServer server = player.getServer();
                     if(server == null) return;
-                    BlockPos pos = Optional.ofNullable(player.getRespawnPosition()).orElse(getSpawn(server.overworld()));
-                    player.teleportTo(server.overworld(), pos.getX(), pos.getY(), pos.getZ(), Set.of(), 0f, 0f, true);
+                    if(player.getCommandSenderWorld().dimension().equals(server.overworld().dimension())) return;
+                    Vec3 pos = player.getData(TP_BACK_POSITION);
+                    player.teleportTo(server.overworld(), pos.x(), pos.y(), pos.z(), Set.of(), 0f, 0f, true);
                 })
                 .build();
 
@@ -94,8 +116,14 @@ public class Civilization {
                     ServerPlayer player = buttonAction.getPlayer();
                     MinecraftServer server = player.getServer();
                     if(server == null) return;
+
                     ResourceLocation resourceLocation = ResourceLocation.read(Config.normalResourceWorldId).getOrThrow();
                     ResourceKey<Level> resourceKey = ResourceKey.create(Registries.DIMENSION, resourceLocation);
+
+                    if(player.getCommandSenderWorld().dimension().equals(resourceKey)) return;
+
+                    Vec3 playerPos = player.getPosition(1);
+                    player.setData(TP_BACK_POSITION, playerPos);
                     RTPDCommand.runCommand(player, server.getLevel(resourceKey));
                 })
                 .build();
@@ -136,7 +164,7 @@ public class Civilization {
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
-    @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
