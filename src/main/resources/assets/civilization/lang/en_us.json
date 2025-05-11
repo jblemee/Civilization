@@ -1,5 +1,5 @@
 {
-  "itemGroup.civilization": "Example Mod Tab",
+  "itemGroup.civilization": "Civilization Mod Tab",
   "block.civilization.example_block": "Example Block",
-  "item.civilization.example_item": "Example Item"
+  "item.civilization.civ_menu": "Civilization Menu"
 }

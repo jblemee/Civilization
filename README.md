@@ -36,12 +36,21 @@ On the machine console, execute : `docker exec -i docker-minecraft-server-civili
 
 ```bash
 luckperms user Plus200 permission set luckperms.* true
-lp group default permission set randomtp.commands.* false
+lp group default permission set randomtp.command.* false
+```
+
+## Multiworld
+
+Create a resource world, works only ingame as Operator:
+
+```bash
+/mw create civ:normal NORMAL
 ```
 
 ## RandomTP
 
 - Disable direct access to TP. See [Luckperms](#luckperms)
+- Set world border: `/worldborder set 1024`
 - Enable random tp on first logging on `config/RandomTP/config.yaml`
 - Set cooldowb between 2 TP
 
