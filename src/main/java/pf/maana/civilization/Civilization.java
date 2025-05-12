@@ -139,7 +139,6 @@ public class Civilization {
                             } catch (Exception e) {
                                 LOGGER.error("Failed to open menu", e);
                             }
-
                             return 0;
                         })
         );

@@ -37,6 +37,8 @@ On the machine console, execute : `docker exec -i docker-minecraft-server-civili
 ```bash
 luckperms user Plus200 permission set luckperms.* true
 lp group default permission set randomtp.command.* false
+lp group default permission set realeconomy.user.command.* true
+lp group default permission set realeconomy.admin.command.* false
 ```
 
 ## Multiworld
@@ -61,6 +63,14 @@ cooldown: 300
 
 ## Perma Death
 
-Configure death duration on `config\permadeath-server.toml`
+Configure death duration on `config/permadeath-server.toml`
+
+## Money and Sign Shops
+
+Config on `config/dicemcmm-server.toml`
+
+```toml
+starting_funds = 0
+```
 
 
