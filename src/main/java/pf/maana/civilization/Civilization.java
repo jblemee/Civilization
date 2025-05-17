@@ -15,7 +15,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -26,7 +25,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.UseCooldown;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
@@ -40,12 +38,10 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.slf4j.Logger;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -169,14 +165,14 @@ public class Civilization {
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         LOGGER.info("Player " + event.getEntity().getName().getString() + " logged in");
-        if (event.getEntity().getInventory().hasAnyMatching(itemStack -> itemStack.getCustomName() != null && MENU_TEXT.equals(itemStack.getCustomName().getString())))
-            return;
-
-        ItemStack menu = new ItemStack(Items.PAPER, 1);
-        menu.set(DataComponents.CUSTOM_NAME, Component.literal(MENU_TEXT).withColor(0x32a852));
-        menu.set(DataComponents.USE_COOLDOWN, new UseCooldown(60));
-        menu.set(DataComponents.CUSTOM_DATA, Optional.ofNullable(menu.get(DataComponents.CUSTOM_DATA)).orElse(CustomData.of(new CompoundTag())).update(t -> t.putString("command", "civilization")));
-        ItemHandlerHelper.giveItemToPlayer(event.getEntity(), menu, 0);
+//        if (event.getEntity().getInventory().hasAnyMatching(itemStack -> itemStack.getCustomName() != null && MENU_TEXT.equals(itemStack.getCustomName().getString())))
+//            return;
+//
+//        ItemStack menu = new ItemStack(Items.PAPER, 1);
+//        menu.set(DataComponents.CUSTOM_NAME, Component.literal(MENU_TEXT).withColor(0x32a852));
+//        menu.set(DataComponents.USE_COOLDOWN, new UseCooldown(60));
+//        menu.set(DataComponents.CUSTOM_DATA, Optional.ofNullable(menu.get(DataComponents.CUSTOM_DATA)).orElse(CustomData.of(new CompoundTag())).update(t -> t.putString("command", "civilization")));
+//        ItemHandlerHelper.giveItemToPlayer(event.getEntity(), menu, 0);
     }
 
     @SubscribeEvent
