@@ -1,51 +1,23 @@
 package pf.maana.civilization;
 
-import ca.landonjw.gooeylibs2.api.UIManager;
-import ca.landonjw.gooeylibs2.api.button.GooeyButton;
-import ca.landonjw.gooeylibs2.api.page.GooeyPage;
-import ca.landonjw.gooeylibs2.api.page.Page;
-import ca.landonjw.gooeylibs2.api.template.Template;
-import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
-import com.gmail.picono435.randomtp.commands.RTPDCommand;
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.slf4j.Logger;
 
-import java.util.Set;
 import java.util.function.Supplier;
-
-import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @Mod(Civilization.MOD_ID)
 public class Civilization {
@@ -57,7 +29,7 @@ public class Civilization {
                     Codec.DOUBLE.fieldOf("z").forGetter(Vec3::z)
             ).apply(instance, Vec3::new) // Define how to create the object
     );
-    private static final String MENU_TEXT = "Civilization Menu";
+//    private static final String MENU_TEXT = "Civilization Menu";
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MOD_ID);
     private static final Supplier<AttachmentType<Vec3>> TP_BACK_POSITION = ATTACHMENT_TYPES.register(
@@ -68,99 +40,99 @@ public class Civilization {
         modEventBus.addListener(this::commonSetup);
         ATTACHMENT_TYPES.register(modEventBus);
         NeoForge.EVENT_BUS.register(this);
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+//        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("Normal Resource World ID: " + Config.normalResourceWorldId);
+//        LOGGER.info("Normal Resource World ID: " + Config.normalResourceWorldId);
     }
 
     @SubscribeEvent
     public void onCommandRegistration(RegisterCommandsEvent event) {
         LOGGER.info("Registering commands");
-
-        // TODO: looks like neoforge provide menu feature. See Player.openMenu / MenuHandler
-        GooeyButton mainWorldButton = GooeyButton.builder()
-                .display(new ItemStack(Items.GRASS_BLOCK))
-                .with(DataComponents.CUSTOM_NAME, Component.literal("Main World").withColor(0x32a852))
-                .onClick((buttonAction) -> {
-                    ServerPlayer player = buttonAction.getPlayer();
-                    MinecraftServer server = player.getServer();
-                    if (server == null) return;
-                    if (player.getCommandSenderWorld().dimension().equals(server.overworld().dimension())) return;
-                    Vec3 pos = player.getData(TP_BACK_POSITION);
-                    player.teleportTo(server.overworld(), pos.x(), pos.y(), pos.z(), Set.of(), 0f, 0f, true);
-                })
-                .build();
-
-        GooeyButton normalResourceWorldButton = GooeyButton.builder()
-                .display(new ItemStack(Items.STONE))
-                .with(DataComponents.CUSTOM_NAME, Component.literal("Resource World").withColor(0x32a852))
-                .onClick((buttonAction) -> {
-                    ServerPlayer player = buttonAction.getPlayer();
-                    MinecraftServer server = player.getServer();
-                    if (server == null) return;
-
-                    ResourceLocation resourceLocation = ResourceLocation.read(Config.normalResourceWorldId).getOrThrow();
-                    ResourceKey<Level> resourceKey = ResourceKey.create(Registries.DIMENSION, resourceLocation);
-
-                    if (player.getCommandSenderWorld().dimension().equals(resourceKey)) return;
-
-                    Vec3 playerPos = player.getPosition(1);
-                    player.setData(TP_BACK_POSITION, playerPos);
-                    RTPDCommand.runCommand(player, server.getLevel(resourceKey));
-                })
-                .build();
-
-        GooeyButton border = GooeyButton.builder()
-                .display(new ItemStack(Items.BLACK_STAINED_GLASS_PANE))
-                .with(DataComponents.CUSTOM_NAME, Component.empty())
-                .build();
-
-        Template template = ChestTemplate.builder(3)
-                .border(0, 0, 3, 9, border)
-                .set(10, mainWorldButton)
-                .set(16, normalResourceWorldButton)
-                .build();
-
-        Page page = new GooeyPage(template, null, Component.literal(MENU_TEXT), null, null);
-
-        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
-        dispatcher.register(
-                Commands.literal(MOD_ID)
-                        .executes(context -> {
-                            try {
-                                ServerPlayer source = context.getSource().getPlayerOrException();
-                                UIManager.openUIForcefully(source, page);
-                            } catch (Exception e) {
-                                LOGGER.error("Failed to open menu", e);
-                            }
-                            return 0;
-                        })
-        );
+//
+//        // TODO: looks like neoforge provide menu feature. See Player.openMenu / MenuHandler
+//        GooeyButton mainWorldButton = GooeyButton.builder()
+//                .display(new ItemStack(Items.GRASS_BLOCK))
+//                .with(DataComponents.CUSTOM_NAME, Component.literal("Main World").withColor(0x32a852))
+//                .onClick((buttonAction) -> {
+//                    ServerPlayer player = buttonAction.getPlayer();
+//                    MinecraftServer server = player.getServer();
+//                    if (server == null) return;
+//                    if (player.getCommandSenderWorld().dimension().equals(server.overworld().dimension())) return;
+//                    Vec3 pos = player.getData(TP_BACK_POSITION);
+//                    player.teleportTo(server.overworld(), pos.x(), pos.y(), pos.z(), Set.of(), 0f, 0f, true);
+//                })
+//                .build();
+//
+//        GooeyButton normalResourceWorldButton = GooeyButton.builder()
+//                .display(new ItemStack(Items.STONE))
+//                .with(DataComponents.CUSTOM_NAME, Component.literal("Resource World").withColor(0x32a852))
+//                .onClick((buttonAction) -> {
+//                    ServerPlayer player = buttonAction.getPlayer();
+//                    MinecraftServer server = player.getServer();
+//                    if (server == null) return;
+//
+//                    ResourceLocation resourceLocation = ResourceLocation.read(Config.normalResourceWorldId).getOrThrow();
+//                    ResourceKey<Level> resourceKey = ResourceKey.create(Registries.DIMENSION, resourceLocation);
+//
+//                    if (player.getCommandSenderWorld().dimension().equals(resourceKey)) return;
+//
+//                    Vec3 playerPos = player.getPosition(1);
+//                    player.setData(TP_BACK_POSITION, playerPos);
+//                    RTPDCommand.runCommand(player, server.getLevel(resourceKey));
+//                })
+//                .build();
+//
+//        GooeyButton border = GooeyButton.builder()
+//                .display(new ItemStack(Items.BLACK_STAINED_GLASS_PANE))
+//                .with(DataComponents.CUSTOM_NAME, Component.empty())
+//                .build();
+//
+//        Template template = ChestTemplate.builder(3)
+//                .border(0, 0, 3, 9, border)
+//                .set(10, mainWorldButton)
+//                .set(16, normalResourceWorldButton)
+//                .build();
+//
+//        Page page = new GooeyPage(template, null, Component.literal(MENU_TEXT), null, null);
+//
+//        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+//        dispatcher.register(
+//                Commands.literal(MOD_ID)
+//                        .executes(context -> {
+//                            try {
+//                                ServerPlayer source = context.getSource().getPlayerOrException();
+//                                UIManager.openUIForcefully(source, page);
+//                            } catch (Exception e) {
+//                                LOGGER.error("Failed to open menu", e);
+//                            }
+//                            return 0;
+//                        })
+//        );
     }
 
-    @SubscribeEvent
-    public void onItemInteract(PlayerInteractEvent.RightClickItem event) {
-        ItemStack itemStack = event.getItemStack();
-        if (itemStack.getItem() == Items.PAPER) {
-            LOGGER.info("Item interacted: {}", itemStack.getItem());
-            LOGGER.info("Item tags: {}", itemStack.getTags().toList());
-            LOGGER.info("Item data components: {}", itemStack.getComponents().stream().toList());
-            CustomData customData = itemStack.get(DataComponents.CUSTOM_DATA);
-            if (customData != null) {
-                LOGGER.info("Command Data Component: {}", itemStack.get(DataComponents.CUSTOM_DATA));
-                Player player = event.getEntity();
-                MinecraftServer server = event.getEntity().getServer();
-                Tag commandTag = customData.copyTag().get("command");
-                if (server == null || isEmpty(commandTag)) return;
-
-                if (player instanceof ServerPlayer serverPlayer) {
-                    server.getCommands().performPrefixedCommand(serverPlayer.createCommandSourceStack(), commandTag.getAsString());
-                }
-            }
-        }
-    }
+//    @SubscribeEvent
+//    public void onItemInteract(PlayerInteractEvent.RightClickItem event) {
+//        ItemStack itemStack = event.getItemStack();
+//        if (itemStack.getItem() == Items.PAPER) {
+//            LOGGER.info("Item interacted: {}", itemStack.getItem());
+//            LOGGER.info("Item tags: {}", itemStack.getTags().toList());
+//            LOGGER.info("Item data components: {}", itemStack.getComponents().stream().toList());
+//            CustomData customData = itemStack.get(DataComponents.CUSTOM_DATA);
+//            if (customData != null) {
+//                LOGGER.info("Command Data Component: {}", itemStack.get(DataComponents.CUSTOM_DATA));
+//                Player player = event.getEntity();
+//                MinecraftServer server = event.getEntity().getServer();
+//                Tag commandTag = customData.copyTag().get("command");
+//                if (server == null || isEmpty(commandTag)) return;
+//
+//                if (player instanceof ServerPlayer serverPlayer) {
+//                    server.getCommands().performPrefixedCommand(serverPlayer.createCommandSourceStack(), commandTag.getAsString());
+//                }
+//            }
+//        }
+//    }
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
